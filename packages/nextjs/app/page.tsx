@@ -5,9 +5,45 @@ import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import { BugAntIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Address } from "~~/components/scaffold-eth";
+import deployedContracts from "../contracts/deployedContracts"; // Импортируем контракт
+import { useContractRead, useContractWrite } from "wagmi";
+import { ethers } from "ethers"; // Импортируем ethers вместо BigNumber
 
 const Home: NextPage = () => {
   const { address: connectedAddress } = useAccount();
+
+  // Достаем адрес и ABI для контракта
+  const { address, abi } = deployedContracts[31337].YourContract;
+
+  // Пример чтения данных с контракта
+  const { data: pollData, isLoading: pollLoading } = useContractRead({
+    address: address, // Адрес контракта
+    abi: abi, // ABI контракта
+    functionName: "getPoll",
+    args: [1], // pollId, передаем как обычное число
+  });
+
+  // Пример вызова функции для создания опроса
+  const { write: createPoll, isLoading, isSuccess } = useContractWrite({
+    address: address, // Адрес контракта
+    abi: abi, // ABI контракта
+    functionName: "createPoll",
+    args: ["What is your favorite color?", ["Red", "Green", "Blue"]], // Передаем корректные данные
+    overrides: {
+      gasLimit: 500000, // Устанавливаем лимит газа
+    },
+  });
+
+  // Пример вызова функции для голосования
+  const { write: vote } = useContractWrite({
+    address: address,
+    abi: abi,
+    functionName: "vote",
+    args: [1, 0], // pollId и optionId, передаем как обычные числа
+    overrides: {
+      gasLimit: 500000, // Устанавливаем лимит газа
+    },
+  });
 
   return (
     <>
@@ -61,6 +97,42 @@ const Home: NextPage = () => {
                 tab.
               </p>
             </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col space-y-4 mt-10">
+          {/* Отображаем информацию о текущем опросе */}
+          {pollLoading ? (
+            <p>Loading poll data...</p>
+          ) : (
+            pollData && (
+              <div className="text-center">
+                <h3 className="text-2xl">Poll: {pollData[0]}</h3>
+                <ul>
+                  {pollData[1].map((option: string, index: number) => (
+                    <li key={index}>{option}</li>
+                  ))}
+                </ul>
+              </div>
+            )
+          )}
+
+          {/* Кнопки для взаимодействия с контрактом */}
+          <div className="flex justify-center gap-6">
+            <button
+              onClick={() => createPoll?.()}
+              className="btn btn-primary"
+              disabled={isLoading || isSuccess}
+            >
+              Create Poll
+            </button>
+            <button
+              onClick={() => vote?.()}
+              className="btn btn-primary"
+              disabled={isLoading || isSuccess}
+            >
+              Vote
+            </button>
           </div>
         </div>
       </div>

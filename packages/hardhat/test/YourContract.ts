@@ -3,26 +3,23 @@ import { ethers } from "hardhat";
 import { YourContract } from "../typechain-types";
 
 describe("YourContract", function () {
-  // We define a fixture to reuse the same setup in every test.
-
   let yourContract: YourContract;
+
   before(async () => {
-    const [owner] = await ethers.getSigners();
-    const yourContractFactory = await ethers.getContractFactory("YourContract");
-    yourContract = (await yourContractFactory.deploy(owner.address)) as YourContract;
+    const YourContractFactory = await ethers.getContractFactory("YourContract");
+    yourContract = (await YourContractFactory.deploy()) as YourContract;
     await yourContract.waitForDeployment();
   });
 
-  describe("Deployment", function () {
-    it("Should have the right message on deploy", async function () {
-      expect(await yourContract.greeting()).to.equal("Building Unstoppable Apps!!!");
-    });
+  it("Should allow the creation of a poll", async function () {
+    const question = "What is your favorite color?";
+    const options = ["Red", "Blue", "Green"];
 
-    it("Should allow setting a new message", async function () {
-      const newGreeting = "Learn Scaffold-ETH 2! :)";
+    await yourContract.createPoll(question, options);
+    const poll = await yourContract.getPoll(0);
 
-      await yourContract.setGreeting(newGreeting);
-      expect(await yourContract.greeting()).to.equal(newGreeting);
-    });
+    expect(poll[0]).to.equal(question); // Проверяем вопрос
+    expect(poll[1]).to.deep.equal(options); // Проверяем опции
+    expect(poll[2]).to.be.true; // Проверяем, что опрос активен
   });
 });
